@@ -13,18 +13,7 @@
                 <el-button @click="resetForm('thingsForm')">重置</el-button>
             </el-form-item>
         </el-form>
-        <!--        展示表格-->
-        <el-table :data="things" border="">
-            <el-table-column label="序号" type="index"></el-table-column>
-            <el-table-column label="事件名称" prop="name"></el-table-column>
-            <el-table-column label="添加时间" prop="time"></el-table-column>
-            <el-table-column label="操作">
-                <template slot-scope="scope">
-                    <el-button type="primary" icon="el-icon-edit" @click="doUpdate(scope)" circle></el-button>
-                    <el-button type="danger" icon="el-icon-delete" @click="doDelete(scope)" circle></el-button>
-                </template>
-            </el-table-column>
-        </el-table>
+
         <!--        模态框-->
         <el-dialog :title="title" :visible.sync="dialogVisible" @close="closeDialog('dialogForm')">
 
@@ -40,9 +29,50 @@
             </div>
         </el-dialog>
 
+<!--        用户反馈-->
+        <el-divider><i class="el-icon-info"></i></el-divider>
+        <el-form :model="feedbackForm" :rules="feedbackRules" ref="feedbackForm">
+            <el-form-item label="内容" prop="content">
+                <el-input v-model="feedbackForm.content" clearable></el-input>
+            </el-form-item>
+            <el-form-item label="联系方式" prop="contact">
+                <el-input v-model="feedbackForm.contact"></el-input>
+            </el-form-item>
+            <el-form-item>
+                <el-button type="primary" @click="submitFeedbackForm('feedbackForm')">添加</el-button>
+                <el-button @click="resetForm('feedbackForm')">重置</el-button>
+            </el-form-item>
+        </el-form>
+        <el-table :data="feedbackList" border="">
+            <el-table-column label="序号" type="index"></el-table-column>
+            <el-table-column label="内容" prop="content"></el-table-column>
+            <el-table-column label="联系方式" prop="contact"></el-table-column>
+            <el-table-column label="添加时间" prop="createTime"></el-table-column>
+<!--            <el-table-column label="操作">-->
+<!--                <template slot-scope="scope">-->
+<!--                    <el-button type="primary" icon="el-icon-edit" @click="doUpdate(scope)" circle></el-button>-->
+<!--                    <el-button type="danger" icon="el-icon-delete" @click="doDelete(scope)" circle></el-button>-->
+<!--                </template>-->
+<!--            </el-table-column>-->
+        </el-table>
+        <el-button type="primary" @click="getToken">获取token</el-button>
+        <!--        展示表格-->
+        <el-table :data="things" border>
+            <el-table-column label="序号" type="index"></el-table-column>
+            <el-table-column label="事件名称" prop="name"></el-table-column>
+            <el-table-column label="添加时间" prop="time"></el-table-column>
+            <el-table-column label="操作">
+                <template slot-scope="scope">
+                    <el-button type="primary" icon="el-icon-edit" @click="doUpdate(scope)" circle></el-button>
+                    <el-button type="danger" icon="el-icon-delete" @click="doDelete(scope)" circle></el-button>
+                </template>
+            </el-table-column>
+        </el-table>
+
     </div>
 </template>
 <script>
+
     import moment from 'moment'
 
     export default {
@@ -71,7 +101,18 @@
                     index: 0,
                     name: ''
                 },
-                dialogVisible: false
+                dialogVisible: false,
+                //反馈信息
+                feedbackList:[],
+                feedbackForm:{
+                    content:"",
+                    contact:"",
+                    optType:1
+                },
+                feedbackRules:{
+                    content:{required:true,message:"内容必填",trigger:"blue"},
+                    contact:{required:true,message:"内容必填",trigger:"blue"},
+                }
             }
         },
         created() {
@@ -83,6 +124,11 @@
             setInterval(() => {
                 this.thingsForm.time = moment().format("YYYY-MM-DD HH:mm:ss");
             }, 1000)
+            //获取反馈信息
+            this.getList();
+        },
+        mounted(){
+            console.log(this.constMap)
         },
         methods: {
             submitForm(formName) {
@@ -114,7 +160,8 @@
                     cancelButtonText: "取消",
                     type: "error"
                 }).then(() => {
-                    this.things.splice(scope.$index, 1)
+                    this.things.splice(scope.$index, 1);
+                    this.updateStorage()
                     this.$message({
                         type: "success",
                         message: "删除成功！"
@@ -145,6 +192,54 @@
             // 更新缓存
             updateStorage() {
                 localStorage.setItem("things", JSON.stringify(this.things))
+            },
+            getList(){
+                this.$get("/apis/feedback/list",{
+                    page: 1,
+                    limit: 10
+                },(res)=>{
+                    console.log(res)
+                    if(res.code === 1){
+                        this.feedbackList = res.data;
+                    }else {
+                        this.$message("出错了~")
+                    }
+                })
+            },
+            submitFeedbackForm(formName) {
+                this.$refs[formName].validate((valid) => {
+                    if (valid) {
+                        // 执行添加
+                        this.$post("/apis/feedback/saveOrUpdate",this.feedbackForm,(res)=>{
+                            console.log(res)
+                            if(res.code === 1){
+                                this.$message(res.message)
+                            }
+                        },(res)=>{
+                            console.log(res)
+                        })
+                    } else {
+                        return false;
+                    }
+                })
+            },
+            getToken(){
+                // this.$post("/apis/common/getToken",{},(res)=>{
+                //     console.log(JSON.parse(res.data))
+                //     if(res.code === 1){
+                //         this.$message(res.message)
+                //     }
+                // },(res)=>{
+                //     console.log(res)
+                // })
+                this.$post("/apis/common/baidubce",{},(res)=>{
+                    console.log(res)
+                    // if(res.code === 1){
+                    //     this.$message(res.message)
+                    // }
+                },(res)=>{
+                    console.log(res)
+                })
             }
 
         }
@@ -154,5 +249,8 @@
     .main {
         max-width: 750px;
         margin: 0 auto;
+    }
+    table{
+        width: 100% !important;
     }
 </style>

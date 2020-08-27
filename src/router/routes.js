@@ -2,6 +2,8 @@ import Vue from "vue";
 import Router from 'vue-router';
 
 const home = ()=> import("@/components/pages/Home");
+const luckDraw = ()=> import("@/components/pages/LuckDraw");
+const numTransform = ()=> import("@/components/pages/NumTransform");
 const routes = [
     {
         path:'/',
@@ -12,6 +14,16 @@ const routes = [
         path:'/home',
         name:'home',
         component:home,
+    },
+    {
+        path:'/luckDraw',
+        name:'luckDraw',
+        component:luckDraw,
+    },
+    {
+        path:'/numTransform',
+        name:'numTransform',
+        component:numTransform,
     }
 ]
 Vue.use(Router);
